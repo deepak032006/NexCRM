@@ -1,17 +1,115 @@
 'use client';
 
-
 import { useState, useEffect } from "react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+type PageKey =
+  | "dashboard"
+  | "pipeline"
+  | "leads"
+  | "calls"
+  | "ai-followup"
+  | "ai-actions"
+  | "sentiment"
+  | "lead-scoring"
+  | "employees"
+  | "reports"
+  | "settings";
+
+interface User {
+  name: string;
+  role: string;
+}
+
+interface NavLink {
+  label: string;
+  icon: string;
+  page: PageKey;
+  ai?: boolean;
+}
+
+interface NavSection {
+  section: string;
+  links: NavLink[];
+}
+
+interface KPI {
+  label: string;
+  value: string;
+  delta: string;
+  positive: boolean;
+  note: string;
+  icon: string;
+}
+
+interface HotLead {
+  name: string;
+  source: string;
+  city: string;
+  time: string;
+  score: number;
+}
+
+interface FollowUp {
+  name: string;
+  status: string;
+  color: string;
+  bg: string;
+  msg: string;
+  action: string;
+  time?: string;
+  score?: number;
+}
+
+interface ActivityItem {
+  dot: string;
+  text: string;
+  action: string;
+  time: string;
+  by: string;
+}
+
+interface LeaderboardRow {
+  rank: string;
+  name: string;
+  calls: number;
+  conv: string;
+  rev: string;
+  score: number;
+}
+
+interface PipelineStage {
+  label: string;
+  color: string;
+  bg: string;
+  count: number;
+  leads: string[];
+}
+
+interface Lead {
+  name: string;
+  phone: string;
+  source: string;
+  assigned: string;
+  stage: string;
+  stageColor: string;
+  score: number;
+  scoreLabel: string;
+  scoreColor: string;
+  sentiment: string;
+  sentColor: string;
+  added: string;
+  lastContact: string;
+}
 
 // ─── Router ──────────────────────────────────────────────────────────────────
 function useRouter() {
-  const [page, setPage] = useState("dashboard");
-  const navigate = (p) => setPage(p);
+  const [page, setPage] = useState<PageKey>("dashboard");
+  const navigate = (p: PageKey) => setPage(p);
   return { page, navigate };
 }
 
-
-const navSections = [
+const navSections: NavSection[] = [
   {
     section: "MAIN",
     links: [
@@ -40,7 +138,15 @@ const navSections = [
   },
 ];
 
-function Sidebar({ currentPage, navigate, user, onLogout }) {
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+interface SidebarProps {
+  currentPage: PageKey;
+  navigate: (p: PageKey) => void;
+  user: User;
+  onLogout: () => void;
+}
+
+function Sidebar({ currentPage, navigate, user, onLogout }: SidebarProps) {
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "AK";
@@ -90,15 +196,25 @@ function Sidebar({ currentPage, navigate, user, onLogout }) {
         </div>
         <button onClick={onLogout} title="Logout"
           style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#94a3b8", padding: 4, borderRadius: 6, transition: "color 0.15s" }}
-          onMouseEnter={(e) => (e.target.style.color = "#ef4444")}
-          onMouseLeave={(e) => (e.target.style.color = "#94a3b8")}>⏻</button>
+          onMouseEnter={(e) => ((e.target as HTMLButtonElement).style.color = "#ef4444")}
+          onMouseLeave={(e) => ((e.target as HTMLButtonElement).style.color = "#94a3b8")}>⏻</button>
       </div>
     </aside>
   );
 }
 
 // ─── Layout wrapper ───────────────────────────────────────────────────────────
-function Layout({ currentPage, navigate, user, onLogout, children, title, subtitle }) {
+interface LayoutProps {
+  currentPage: PageKey;
+  navigate: (p: PageKey) => void;
+  user: User;
+  onLogout: () => void;
+  children: React.ReactNode;
+  title: string;
+  subtitle?: string;
+}
+
+function Layout({ currentPage, navigate, user, onLogout, children, title, subtitle }: LayoutProps) {
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#f8fafc", overflow: "hidden" }}>
       <Sidebar currentPage={currentPage} navigate={navigate} user={user} onLogout={onLogout} />
@@ -126,7 +242,15 @@ function Layout({ currentPage, navigate, user, onLogout, children, title, subtit
 }
 
 // ─── Placeholder page ─────────────────────────────────────────────────────────
-function PlaceholderPage({ icon, title, desc, color = "#6366f1", navigate }) {
+interface PlaceholderPageProps {
+  icon: string;
+  title: string;
+  desc: string;
+  color?: string;
+  navigate: (p: PageKey) => void;
+}
+
+function PlaceholderPage({ icon, title, desc, color = "#6366f1", navigate }: PlaceholderPageProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 400, gap: 16, padding: 40 }}>
       <div style={{ width: 72, height: 72, borderRadius: 20, background: `${color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34 }}>{icon}</div>
@@ -143,38 +267,46 @@ function PlaceholderPage({ icon, title, desc, color = "#6366f1", navigate }) {
 }
 
 // ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
-const kpis = [
+const kpis: KPI[] = [
   { label: "Total Leads Today", value: "48", delta: "+12%", positive: true, note: "vs yesterday", icon: "👥" },
   { label: "Calls Made", value: "134", delta: "+8%", positive: true, note: "this week", icon: "📞" },
   { label: "Conversions", value: "18.4%", delta: "+2.1%", positive: true, note: "this month", icon: "🎯" },
   { label: "Revenue MTD", value: "₹12.4L", delta: "-3%", positive: false, note: "vs last month", icon: "💰" },
 ];
-const hotLeads = [
+
+const hotLeads: HotLead[] = [
   { name: "Ravi Kumar", source: "Justdial", city: "Mumbai", time: "2h", score: 92 },
   { name: "Priya Sharma", source: "Website", city: "Delhi", time: "4h", score: 74 },
   { name: "Deepak Tiwari", source: "Referral", city: "Pune", time: "1d", score: 88 },
   { name: "Meena Lakshmi", source: "Walk-in", city: "Chennai", time: "", score: 65 },
 ];
-const followUps = [
+
+const followUps: FollowUp[] = [
   { name: "Ravi Kumar", status: "OVERDUE", color: "#ef4444", bg: "#fef2f2", msg: "High buying intent detected. Call immediately for demo scheduling.", action: "📞 Call Now" },
   { name: "Priya Sharma", status: "DUE TODAY", color: "#f59e0b", bg: "#fffbeb", msg: "Send product brochure. Lead showed interest in Premium plan.", action: "✉ Send Email" },
   { name: "Suresh Reddy", status: "SCHEDULED", color: "#10b981", bg: "#f0fdf4", msg: "Callback scheduled for 3 PM today. Prepare pricing sheet.", action: "" },
 ];
-const activity = [
+
+const activity: ActivityItem[] = [
   { dot: "#10b981", text: "Kiran Patel", action: "converted to customer", time: "10 min ago", by: "Neha G." },
   { dot: "#6366f1", text: "Aman Singh", action: "moved to Interested", time: "25 min ago", by: "Raj B." },
   { dot: "#8b5cf6", text: "AI", action: "assigned 3 new leads to Neha", time: "40 min ago", by: "auto" },
   { dot: "#0ea5e9", text: "Meena L.", action: "demo scheduled", time: "1h ago", by: "Suresh R." },
   { dot: "#ef4444", text: "Vinod H.", action: "marked as Lost", time: "2h ago", by: "Raj B." },
 ];
-const leaderboard = [
+
+const leaderboard: LeaderboardRow[] = [
   { rank: "🥇", name: "Neha Gupta", calls: 42, conv: "24%", rev: "₹4.2L", score: 96 },
   { rank: "🥈", name: "Raj Bhatt", calls: 38, conv: "21%", rev: "₹3.8L", score: 91 },
   { rank: "🥉", name: "Suresh Reddy", calls: 30, conv: "18%", rev: "₹2.4L", score: 84 },
   { rank: "4", name: "Aman Singh", calls: 24, conv: "15%", rev: "₹1.9L", score: 72 },
 ];
 
-function ScoreBar({ score }) {
+interface ScoreBarProps {
+  score: number;
+}
+
+function ScoreBar({ score }: ScoreBarProps) {
   const color = score >= 85 ? "#10b981" : score >= 70 ? "#6366f1" : "#f59e0b";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -186,7 +318,11 @@ function ScoreBar({ score }) {
   );
 }
 
-function DashboardContent({ navigate }) {
+interface DashboardContentProps {
+  navigate: (p: PageKey) => void;
+}
+
+function DashboardContent({ navigate }: DashboardContentProps) {
   const [alertVisible, setAlertVisible] = useState(true);
   return (
     <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -228,7 +364,8 @@ function DashboardContent({ navigate }) {
           </div>
           {hotLeads.map((lead, i) => (
             <div key={i} onClick={() => navigate("leads")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: 8, background: "#fafafa", marginBottom: 5, cursor: "pointer", transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fafafa")}>
+              onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = "#f1f5f9")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = "#fafafa")}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#fbbf24,#ef4444)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 10, fontWeight: 800 }}>{lead.name.split(" ").map((n) => n[0]).join("")}</div>
                 <div>
@@ -257,7 +394,7 @@ function DashboardContent({ navigate }) {
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{f.name}</span>
                 <span style={{ fontSize: 9, fontWeight: 800, color: f.color, textTransform: "uppercase" }}>{f.status}</span>
               </div>
-              <p style={{ margin: "0 0 6px", fontSize: 10, color: "#475569", lineHeight: 1.4 }}>AI: "{f.msg}"</p>
+              <p style={{ margin: "0 0 6px", fontSize: 10, color: "#475569", lineHeight: 1.4 }}>AI: &quot;{f.msg}&quot;</p>
               {f.action && (
                 <div style={{ display: "flex", gap: 5 }}>
                   <button style={{ padding: "3px 10px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>{f.action}</button>
@@ -298,8 +435,8 @@ function DashboardContent({ navigate }) {
           <tbody>
             {leaderboard.map((row, i) => (
               <tr key={i} style={{ borderBottom: "1px solid #f8fafc", cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "#f8fafc")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "transparent")}
                 onClick={() => navigate("employees")}>
                 <td style={{ padding: "10px 10px", fontSize: 14 }}>{row.rank}</td>
                 <td style={{ padding: "10px 10px" }}>
@@ -325,7 +462,7 @@ function DashboardContent({ navigate }) {
 }
 
 // ─── PIPELINE PAGE ────────────────────────────────────────────────────────────
-const pipelineStages = [
+const pipelineStages: PipelineStage[] = [
   { label: "New Lead", color: "#6366f1", bg: "#eff6ff", count: 12, leads: ["Ravi Kumar", "Anita Joshi", "Mohan Das", "Sita Rao"] },
   { label: "Contacted", color: "#f59e0b", bg: "#fffbeb", count: 8, leads: ["Priya Sharma", "Deepak Tiwari", "Suresh Reddy"] },
   { label: "Interested", color: "#8b5cf6", bg: "#faf5ff", count: 6, leads: ["Aman Singh", "Kavita Nair"] },
@@ -334,7 +471,11 @@ const pipelineStages = [
   { label: "Lost", color: "#ef4444", bg: "#fef2f2", count: 5, leads: ["Vinod Hegde", "Rajeev Kumar"] },
 ];
 
-function PipelinePage({ navigate }) {
+interface PipelinePageProps {
+  navigate: (p: PageKey) => void;
+}
+
+function PipelinePage({ navigate }: PipelinePageProps) {
   return (
     <div style={{ padding: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -354,8 +495,8 @@ function PipelinePage({ navigate }) {
             <div style={{ padding: "10px 10px", display: "flex", flexDirection: "column", gap: 7 }}>
               {stage.leads.map((name) => (
                 <div key={name} onClick={() => navigate("leads")} style={{ padding: "9px 10px", borderRadius: 8, background: "#fafafa", border: "1px solid #f1f5f9", cursor: "pointer", transition: "all 0.15s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = stage.bg; e.currentTarget.style.borderColor = `${stage.color}40`; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#fafafa"; e.currentTarget.style.borderColor = "#f1f5f9"; }}>
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = stage.bg; (e.currentTarget as HTMLDivElement).style.borderColor = `${stage.color}40`; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#fafafa"; (e.currentTarget as HTMLDivElement).style.borderColor = "#f1f5f9"; }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${stage.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: stage.color }}>{name.split(" ").map((n) => n[0]).join("")}</div>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>{name}</span>
@@ -372,7 +513,7 @@ function PipelinePage({ navigate }) {
 }
 
 // ─── LEADS PAGE ───────────────────────────────────────────────────────────────
-const leadsData = [
+const leadsData: Lead[] = [
   { name: "Ravi Kumar", phone: "+91 98200 12345", source: "Justdial", assigned: "Neha G.", stage: "New Lead", stageColor: "#6366f1", score: 92, scoreLabel: "Hot", scoreColor: "#ef4444", sentiment: "Positive", sentColor: "#10b981", added: "18 Feb", lastContact: "2h ago" },
   { name: "Priya Sharma", phone: "+91 99001 88812", source: "Website", assigned: "Raj B.", stage: "Interested", stageColor: "#8b5cf6", score: 74, scoreLabel: "Warm", scoreColor: "#f59e0b", sentiment: "Neutral", sentColor: "#94a3b8", added: "17 Feb", lastContact: "5h ago" },
   { name: "Deepak Tiwari", phone: "+91 96655 43221", source: "Referral", assigned: "Suresh R.", stage: "Interested", stageColor: "#8b5cf6", score: 88, scoreLabel: "Hot", scoreColor: "#ef4444", sentiment: "Positive", sentColor: "#10b981", added: "16 Feb", lastContact: "1d ago" },
@@ -382,7 +523,11 @@ const leadsData = [
   { name: "Aman Singh", phone: "+91 87654 32100", source: "Website", assigned: "Aman S.", stage: "New Lead", stageColor: "#6366f1", score: 28, scoreLabel: "Cold", scoreColor: "#94a3b8", sentiment: "Neutral", sentColor: "#94a3b8", added: "18 Feb", lastContact: "New" },
 ];
 
-function LeadsPage({ navigate }) {
+interface LeadsPageProps {
+  navigate: (p: PageKey) => void;
+}
+
+function LeadsPage({ navigate: _navigate }: LeadsPageProps) {
   const [search, setSearch] = useState("");
   const filtered = leadsData.filter((l) => l.name.toLowerCase().includes(search.toLowerCase()));
   return (
@@ -411,8 +556,8 @@ function LeadsPage({ navigate }) {
           <tbody>
             {filtered.map((lead, i) => (
               <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer", transition: "background 0.12s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "#f8fafc")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "transparent")}>
                 <td style={{ padding: "10px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${lead.stageColor}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: lead.stageColor }}>{lead.name.split(" ").map((n) => n[0]).join("")}</div>
@@ -438,7 +583,11 @@ function LeadsPage({ navigate }) {
 }
 
 // ─── LEAD SCORING PAGE ────────────────────────────────────────────────────────
-function LeadScoringPage({ navigate }) {
+interface LeadScoringPageProps {
+  navigate: (p: PageKey) => void;
+}
+
+function LeadScoringPage({ navigate }: LeadScoringPageProps) {
   const scoreFactors = [
     { label: "Call frequency (last 7 days)", pct: 30, color: "#6366f1" },
     { label: "Sentiment analysis", pct: 25, color: "#8b5cf6" },
@@ -510,10 +659,10 @@ function LeadScoringPage({ navigate }) {
             </tr>
           </thead>
           <tbody>
-            {leadsData.sort((a,b) => b.score - a.score).map((lead, i) => (
+            {[...leadsData].sort((a, b) => b.score - a.score).map((lead, i) => (
               <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "#f8fafc")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "transparent")}>
                 <td style={{ padding: "9px 12px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{i + 1}</td>
                 <td style={{ padding: "9px 12px", fontSize: 12.5, fontWeight: 700, color: "#1e293b" }}>{lead.name}</td>
                 <td style={{ padding: "9px 12px" }}><span style={{ fontSize: 12, fontWeight: 800, background: `${lead.scoreColor}20`, color: lead.scoreColor, padding: "2px 8px", borderRadius: 99 }}>{lead.score}</span></td>
@@ -533,7 +682,7 @@ function LeadScoringPage({ navigate }) {
 }
 
 // ─── AI FOLLOW-UP PAGE ────────────────────────────────────────────────────────
-const allFollowUps = [
+const allFollowUps: FollowUp[] = [
   { name: "Ravi Kumar", status: "OVERDUE", color: "#ef4444", bg: "#fef2f2", msg: "High buying intent detected. Call immediately for demo scheduling.", action: "📞 Call Now", time: "2h overdue", score: 92 },
   { name: "Priya Sharma", status: "DUE TODAY", color: "#f59e0b", bg: "#fffbeb", msg: "Send product brochure. Lead showed interest in Premium plan.", action: "✉ Send Email", time: "Due at 3 PM", score: 74 },
   { name: "Suresh Reddy", status: "SCHEDULED", color: "#10b981", bg: "#f0fdf4", msg: "Callback scheduled for 3 PM today. Prepare pricing sheet.", action: "", time: "3:00 PM", score: 68 },
@@ -542,8 +691,12 @@ const allFollowUps = [
   { name: "Aman Singh", status: "SCHEDULED", color: "#10b981", bg: "#f0fdf4", msg: "Re-engagement email scheduled. Cold lead — low priority.", action: "", time: "Tomorrow 10 AM", score: 28 },
 ];
 
-function AIFollowUpPage({ navigate }) {
-  const [snoozed, setSnoozed] = useState([]);
+interface AIFollowUpPageProps {
+  navigate: (p: PageKey) => void;
+}
+
+function AIFollowUpPage({ navigate: _navigate }: AIFollowUpPageProps) {
+  const [snoozed, setSnoozed] = useState<string[]>([]);
   return (
     <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
@@ -567,7 +720,7 @@ function AIFollowUpPage({ navigate }) {
                 <span style={{ fontSize: 9, fontWeight: 800, color: f.color, background: f.bg, padding: "2px 7px", borderRadius: 99, textTransform: "uppercase" }}>{f.status}</span>
                 <span style={{ fontSize: 10, color: "#94a3b8" }}>· {f.time}</span>
               </div>
-              <p style={{ margin: 0, fontSize: 11.5, color: "#475569" }}>🤖 AI: "{f.msg}"</p>
+              <p style={{ margin: 0, fontSize: 11.5, color: "#475569" }}>🤖 AI: &quot;{f.msg}&quot;</p>
             </div>
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
               {f.action && <button style={{ padding: "6px 14px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{f.action}</button>}
@@ -580,40 +733,54 @@ function AIFollowUpPage({ navigate }) {
   );
 }
 
-// ─── Router → page map ────────────────────────────────────────────────────────
+// ─── Page config type ─────────────────────────────────────────────────────────
+interface PageConfig {
+  title: string;
+  subtitle: string;
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
   const { page, navigate } = useRouter();
-  const [user] = useState({ name: "Akshat K.", role: "Admin" });
-  const [loggedIn, setLoggedIn] = useState(true); // start logged in for demo
+  const [user] = useState<User>({ name: "Akshat K.", role: "Admin" });
+  const [, setLoggedIn] = useState(true);
 
-  const pageConfig = {
-    dashboard:    { title: "Dashboard",     subtitle: `Welcome back, Akshat · ${new Date().toDateString()}` },
-    pipeline:     { title: "Pipeline",      subtitle: "Drag-and-drop kanban workflow" },
-    leads:        { title: "Leads",         subtitle: "All leads · Table view with source breakdown" },
-    calls:        { title: "Calls",         subtitle: "Call history and recordings" },
-    "ai-followup":{ title: "AI Follow-Up",  subtitle: "AI-powered follow-up reminders" },
-    "ai-actions": { title: "Next Actions",  subtitle: "AI-suggested best next steps" },
-    sentiment:    { title: "Sentiment",     subtitle: "Post-call AI analysis · Flags at-risk leads" },
-    "lead-scoring":{ title: "Lead Scoring", subtitle: "Real-time scoring · Hot / Warm / Cold distribution" },
-    employees:    { title: "Employees",     subtitle: "Team performance and management" },
-    reports:      { title: "Reports",       subtitle: "Full analytics and export" },
-    settings:     { title: "Settings",      subtitle: "Workspace preferences" },
+  const pageConfig: Record<PageKey, PageConfig> = {
+    dashboard:      { title: "Dashboard",     subtitle: `Welcome back, Akshat · ${new Date().toDateString()}` },
+    pipeline:       { title: "Pipeline",      subtitle: "Drag-and-drop kanban workflow" },
+    leads:          { title: "Leads",         subtitle: "All leads · Table view with source breakdown" },
+    calls:          { title: "Calls",         subtitle: "Call history and recordings" },
+    "ai-followup":  { title: "AI Follow-Up",  subtitle: "AI-powered follow-up reminders" },
+    "ai-actions":   { title: "Next Actions",  subtitle: "AI-suggested best next steps" },
+    sentiment:      { title: "Sentiment",     subtitle: "Post-call AI analysis · Flags at-risk leads" },
+    "lead-scoring": { title: "Lead Scoring",  subtitle: "Real-time scoring · Hot / Warm / Cold distribution" },
+    employees:      { title: "Employees",     subtitle: "Team performance and management" },
+    reports:        { title: "Reports",       subtitle: "Full analytics and export" },
+    settings:       { title: "Settings",      subtitle: "Workspace preferences" },
   };
 
-  const cfg = pageConfig[page] || pageConfig.dashboard;
+  const cfg = pageConfig[page];
 
   const renderPage = () => {
-    if (page === "dashboard")     return <DashboardContent navigate={navigate} />;
-    if (page === "pipeline")      return <PipelinePage navigate={navigate} />;
-    if (page === "leads")         return <LeadsPage navigate={navigate} />;
-    if (page === "ai-followup")   return <AIFollowUpPage navigate={navigate} />;
-    if (page === "lead-scoring")  return <LeadScoringPage navigate={navigate} />;
+    if (page === "dashboard")      return <DashboardContent navigate={navigate} />;
+    if (page === "pipeline")       return <PipelinePage navigate={navigate} />;
+    if (page === "leads")          return <LeadsPage navigate={navigate} />;
+    if (page === "ai-followup")    return <AIFollowUpPage navigate={navigate} />;
+    if (page === "lead-scoring")   return <LeadScoringPage navigate={navigate} />;
+
+    const placeholderIcons: Record<PageKey, string> = {
+      calls: "📞", "ai-actions": "⚡", sentiment: "😊",
+      employees: "👥", reports: "🏆", settings: "⚙️",
+      dashboard: "📊", pipeline: "🗂", leads: "👤",
+      "ai-followup": "🤖", "lead-scoring": "🔥",
+    };
+    const aiPages: PageKey[] = ["ai-actions", "sentiment", "ai-followup"];
     return (
       <PlaceholderPage
-        icon={page === "calls" ? "📞" : page === "ai-actions" ? "⚡" : page === "sentiment" ? "😊" : page === "employees" ? "👥" : page === "reports" ? "🏆" : "⚙️"}
+        icon={placeholderIcons[page]}
         title={cfg.title}
         desc={`The ${cfg.title} page is under construction. Navigate back or explore other sections.`}
-        color={["ai-actions","sentiment","ai-followup"].includes(page) ? "#7c3aed" : "#6366f1"}
+        color={aiPages.includes(page) ? "#7c3aed" : "#6366f1"}
         navigate={navigate}
       />
     );
@@ -626,8 +793,5 @@ function App() {
     </Layout>
   );
 }
-
-
-
 
 export default App;
