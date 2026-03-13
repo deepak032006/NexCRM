@@ -32,3 +32,4 @@ export const registerApi = async (
 
   return res.data;
 };
+export const clientApi = api;
