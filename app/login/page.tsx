@@ -27,34 +27,34 @@ export default function LoginPage() {
     return Object.keys(errs).length === 0;
   }
 
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
 
-  if (!validate()) return;
+    if (!validate()) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  const result = await loginAction(email, password);
+    const result = await loginAction(email, password);
 
-  if (result.success) {
-    const token =
-      result.data?.token?.access ||
-      result.data?.access ||
-      result.data?.token;
+    if (result.success) {
+      const token =
+        result.data?.token?.access ||
+        result.data?.access ||
+        result.data?.token;
 
-    if (token) {
-      localStorage.setItem("nexcrm_token", token);
+      if (token) {
+        localStorage.setItem("nexcrm_token", token);
+      }
+
+      toast.success("Login successful 🎉");
+
+      router.replace("/dashboard");
+    } else {
+      toast.error(result.message || "Login failed");
     }
 
-    toast.success("Login successful 🎉");
-
-    router.replace("/dashboard");
-  } else {
-    toast.error(result.message || "Login failed");
+    setLoading(false);
   }
-
-  setLoading(false);
-}
 
   return (
     <div className="min-h-screen bg-crm-bg flex items-center justify-center p-4">
@@ -65,18 +65,28 @@ async function handleSubmit(e: React.FormEvent) {
       </div>
 
       <div className="relative w-full max-w-md">
-        {/* Logo */}
+
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+
+
+            <img
+              src="/logo/main.png"
+              alt="Artizence Logo"
+              className="w-10 h-10 object-contain drop-shadow-md"
+            />
+
+
             <span className="text-2xl font-bold text-gray-900">
-              Nex<span className="text-primary">CRM</span>
+              rtizence<span className="text-primary"></span>
             </span>
+
           </div>
+
           <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500 mt-1">Sign in to your account to continue</p>
+          <p className="text-gray-500 mt-1">
+            Sign in to your account to continue
+          </p>
         </div>
 
         {/* Card */}
@@ -161,7 +171,7 @@ async function handleSubmit(e: React.FormEvent) {
             </button>
           </form>
 
-         
+
           <div className="mt-6 pt-6 border-t border-crm-border text-center">
             <p className="text-sm text-gray-500">
               Don&apos;t have an account?{" "}

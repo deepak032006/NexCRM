@@ -94,17 +94,27 @@ export default function RegisterPage() {
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
+         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+
+
+            <img
+              src="/logo/main.png"
+              alt="Artizence Logo"
+              className="w-10 h-10 object-contain drop-shadow-md"
+            />
+
+
             <span className="text-2xl font-bold text-gray-900">
-              Nex<span className="text-primary">CRM</span>
+              rtizence<span className="text-primary"></span>
             </span>
+
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-          <p className="text-gray-500 mt-1">Start your free trial today</p>
+
+          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+          <p className="text-gray-500 mt-1">
+            Sign up to your account to continue
+          </p>
         </div>
 
         {/* Card */}
